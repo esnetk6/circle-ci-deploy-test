@@ -1,0 +1,29 @@
+# Environment variables
+# - SSH_FINGERPRINT
+# - HOST_NAME
+# - SSH_USER
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/php:7.1.5-browsers
+
+    steps:
+      - checkout
+
+      - add_ssh_keys:
+          fingerprints:
+            - "${SSH_FINGERPRINT}"
+
+      - run:
+          name: Start ssh-keyscan
+          command: |
+            ssh-keyscan ${HOST_NAME} >> ${HOME}/.ssh/known_hosts
+
+      - deploy:
+          name: Start master deploy
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                rsync -av --delete --exclude='.git' --exclude='.circleci' ./ ${SSH_USER}@${HOST_NAME}:/var/www/html/
+            fi
